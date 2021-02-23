@@ -13,6 +13,7 @@ const {
 	getUser,
 	getUsersInRoom,
 } = require('./utils/users');
+const { addRoom, removeRoom, getRooms } = require('./utils/rooms');
 
 const app = express();
 const server = http.createServer(app);
@@ -25,7 +26,7 @@ app.use(express.static(publicDirectoryPath));
 
 io.on('connection', (socket) => {
 	console.log('New WebSocket connection!');
-
+	socket.emit('rooms', getRooms());
 	socket.on('join', (options, callback) => {
 		const { error, user } = addUser({ id: socket.id, ...options });
 
@@ -35,7 +36,10 @@ io.on('connection', (socket) => {
 
 		socket.join(user.room);
 
+		addRoom(user.room);
+
 		socket.emit('message', generateMessage('Admin', 'Welcome!'));
+
 		socket.broadcast
 			.to(user.room)
 			.emit(
@@ -88,6 +92,8 @@ io.on('connection', (socket) => {
 				room: user.room,
 				users: getUsersInRoom(user.room),
 			});
+
+			removeRoom(user.room);
 		}
 	});
 });
